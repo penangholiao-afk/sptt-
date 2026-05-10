@@ -1,0 +1,72 @@
+import pandas as pd
+from collections import Counter
+import random
+
+# Load the data
+file_path = '/home/ubuntu/toto_results/Toto658.txt'
+# Format: DrawNo, Date, N1, N2, N3, N4, N5, N6, Jackpot
+# Note: The file seems to have a trailing comma or extra field in some lines, let's be careful.
+data = []
+with open(file_path, 'r') as f:
+    next(f) # Skip header
+    for line in f:
+        parts = line.strip().split(',')
+        if len(parts) >= 8 and parts[0].isdigit():
+            draw_no = parts[0]
+            date = parts[1]
+            nums = [int(x) for x in parts[2:8]]
+            data.append({'draw_no': draw_no, 'date': date, 'nums': nums})
+
+df = pd.DataFrame(data)
+df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+
+# Filter for the past 5 years (from May 2021 to May 2026)
+start_date = pd.Timestamp('2021-05-10')
+df_5y = df[df['date'] >= start_date]
+
+# Flatten all numbers to calculate frequency
+all_nums = [n for sublist in df_5y['nums'] for n in sublist]
+freq = Counter(all_nums)
+
+# Calculate some stats
+# 1. Hot numbers (top 15)
+hot_numbers = [n for n, c in freq.most_common(15)]
+
+# 2. Cold numbers (bottom 10)
+cold_numbers = [n for n, c in sorted(freq.items(), key=lambda x: x[1])[:10]]
+
+# 3. Overdue numbers (not appeared in recent draws)
+recent_draws = 20
+recent_nums = set([n for sublist in df_5y.tail(recent_draws)['nums'] for n in sublist])
+overdue_numbers = [n for n in range(1, 59) if n not in recent_nums]
+
+# 4. Odd/Even balance
+# 5. Low/High balance (1-29, 30-58)
+
+def generate_set(strategy='balanced'):
+    if strategy == 'hot':
+        # Mostly hot numbers
+        return sorted(random.sample(hot_numbers, 6))
+    elif strategy == 'overdue':
+        # Mix of overdue and hot
+        return sorted(random.sample(overdue_numbers, 3) + random.sample(hot_numbers, 3))
+    else:
+        # Balanced: 3 hot, 1 cold, 2 random from the rest
+        rest = [n for n in range(1, 59) if n not in hot_numbers and n not in cold_numbers]
+        return sorted(random.sample(hot_numbers, 3) + random.sample(cold_numbers, 1) + random.sample(rest, 2))
+
+# Generate 3 sets
+set1 = generate_set('hot')
+set2 = generate_set('balanced')
+set3 = generate_set('overdue')
+
+# Output analysis
+print("--- Supreme Toto 6/58 Analysis (Past 5 Years) ---")
+print(f"Total draws analyzed: {len(df_5y)}")
+print(f"Top 10 Hot Numbers: {hot_numbers[:10]}")
+print(f"Bottom 5 Cold Numbers: {cold_numbers[:5]}")
+print(f"Overdue Numbers (last {recent_draws} draws): {overdue_numbers[:10]}")
+print("\n--- Recommended 3 Sets of 6 Numbers ---")
+print(f"Set 1 (Hot Numbers Strategy): {set1}")
+print(f"Set 2 (Balanced Strategy): {set2}")
+print(f"Set 3 (Overdue & Hot Strategy): {set3}")
