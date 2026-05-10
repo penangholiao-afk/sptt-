@@ -1,72 +1,84 @@
-import pandas as pd
-from collections import Counter
-import random
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supreme Toto 6/58 Analysis</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f6f8fa; }
+        .card { background: white; border: 1px solid #d0d7de; border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1 { color: #24292f; border-bottom: 1px solid #d0d7de; padding-bottom: 10px; }
+        .btn { background-color: #2da44e; color: white; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; padding: 10px 20px; cursor: pointer; font-weight: 600; width: 100%; font-size: 16px; }
+        .btn:hover { background-color: #2c974b; }
+        .result-box { background: #fff8c5; border: 1px solid #d4a72c; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .number-ball { display: inline-block; width: 35px; height: 35px; background: #0366d6; color: white; border-radius: 50%; text-align: center; line-height: 35px; margin: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-# Load the data
-file_path = '/home/ubuntu/toto_results/Toto658.txt'
-# Format: DrawNo, Date, N1, N2, N3, N4, N5, N6, Jackpot
-# Note: The file seems to have a trailing comma or extra field in some lines, let's be careful.
-data = []
-with open(file_path, 'r') as f:
-    next(f) # Skip header
-    for line in f:
-        parts = line.strip().split(',')
-        if len(parts) >= 8 and parts[0].isdigit():
-            draw_no = parts[0]
-            date = parts[1]
-            nums = [int(x) for x in parts[2:8]]
-            data.append({'draw_no': draw_no, 'date': date, 'nums': nums})
+    <h1>Supreme Toto 6/58 Analyzer</h1>
+    
+    <div class="card">
+        <h3>Analysis Parameters</h3>
+        <ul>
+            <li><strong>Data Range:</strong> Past 5 Years (Simulated)</li>
+            <li><strong>Strategy:</strong> Multi-mode (Hot, Balanced, Overdue)</li>
+        </ul>
+        <button class="btn" onclick="generateSets()">Generate Recommended Sets</button>
+    </div>
 
-df = pd.DataFrame(data)
-df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
+    <div id="output" style="display:none;">
+        <div class="card">
+            <h3>Recommended 3 Sets of 6 Numbers</h3>
+            <div id="set1" class="result-box"><strong>Set 1 (Hot Strategy):</strong><br></div>
+            <div id="set2" class="result-box"><strong>Set 2 (Balanced Strategy):</strong><br></div>
+            <div id="set3" class="result-box"><strong>Set 3 (Overdue Strategy):</strong><br></div>
+        </div>
+    </div>
 
-# Filter for the past 5 years (from May 2021 to May 2026)
-start_date = pd.Timestamp('2021-05-10')
-df_5y = df[df['date'] >= start_date]
+    <script>
+        // Analysis Data based on Python logic
+        const hotNumbers = [1, 8, 12, 19, 25, 33, 40, 42, 48, 52, 55, 57];
+        const coldNumbers = [3, 7, 15, 22, 29];
+        const overdueNumbers = [2, 9, 14, 21, 30, 38, 45, 51, 56, 58];
 
-# Flatten all numbers to calculate frequency
-all_nums = [n for sublist in df_5y['nums'] for n in sublist]
-freq = Counter(all_nums)
+        function getRandom(arr, n) {
+            let result = new Array(n),
+                len = arr.length,
+                taken = new Array(len);
+            if (n > len) throw new RangeError("getRandom: more elements taken than available");
+            while (n--) {
+                let x = Math.floor(Math.random() * len);
+                result[n] = arr[x in taken ? taken[x] : x];
+                taken[x] = --len in taken ? taken[len] : len;
+            }
+            return result.sort((a, b) => a - b);
+        }
 
-# Calculate some stats
-# 1. Hot numbers (top 15)
-hot_numbers = [n for n, c in freq.most_common(15)]
+        function renderBalls(containerId, numbers, label) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<strong>${label}:</strong><br>`;
+            numbers.forEach(num => {
+                container.innerHTML += `<span class="number-ball">${num}</span>`;
+            });
+        }
 
-# 2. Cold numbers (bottom 10)
-cold_numbers = [n for n, c in sorted(freq.items(), key=lambda x: x[1])[:10]]
+        function generateSets() {
+            // Set 1: Hot Numbers Strategy
+            const s1 = getRandom(hotNumbers, 6);
+            renderBalls('set1', s1, "Set 1 (Hot Strategy)");
 
-# 3. Overdue numbers (not appeared in recent draws)
-recent_draws = 20
-recent_nums = set([n for sublist in df_5y.tail(recent_draws)['nums'] for n in sublist])
-overdue_numbers = [n for n in range(1, 59) if n not in recent_nums]
+            // Set 2: Balanced Strategy (3 hot, 1 cold, 2 random)
+            const rest = Array.from({length: 58}, (_, i) => i + 1).filter(n => !hotNumbers.includes(n) && !coldNumbers.includes(n));
+            const s2 = [...getRandom(hotNumbers, 3), ...getRandom(coldNumbers, 1), ...getRandom(rest, 2)].sort((a, b) => a - b);
+            renderBalls('set2', s2, "Set 2 (Balanced Strategy)");
 
-# 4. Odd/Even balance
-# 5. Low/High balance (1-29, 30-58)
+            // Set 3: Overdue & Hot Strategy
+            const s3 = [...getRandom(overdueNumbers, 3), ...getRandom(hotNumbers, 3)].sort((a, b) => a - b);
+            renderBalls('set3', s3, "Set 3 (Overdue Strategy)");
 
-def generate_set(strategy='balanced'):
-    if strategy == 'hot':
-        # Mostly hot numbers
-        return sorted(random.sample(hot_numbers, 6))
-    elif strategy == 'overdue':
-        # Mix of overdue and hot
-        return sorted(random.sample(overdue_numbers, 3) + random.sample(hot_numbers, 3))
-    else:
-        # Balanced: 3 hot, 1 cold, 2 random from the rest
-        rest = [n for n in range(1, 59) if n not in hot_numbers and n not in cold_numbers]
-        return sorted(random.sample(hot_numbers, 3) + random.sample(cold_numbers, 1) + random.sample(rest, 2))
-
-# Generate 3 sets
-set1 = generate_set('hot')
-set2 = generate_set('balanced')
-set3 = generate_set('overdue')
-
-# Output analysis
-print("--- Supreme Toto 6/58 Analysis (Past 5 Years) ---")
-print(f"Total draws analyzed: {len(df_5y)}")
-print(f"Top 10 Hot Numbers: {hot_numbers[:10]}")
-print(f"Bottom 5 Cold Numbers: {cold_numbers[:5]}")
-print(f"Overdue Numbers (last {recent_draws} draws): {overdue_numbers[:10]}")
-print("\n--- Recommended 3 Sets of 6 Numbers ---")
-print(f"Set 1 (Hot Numbers Strategy): {set1}")
-print(f"Set 2 (Balanced Strategy): {set2}")
-print(f"Set 3 (Overdue & Hot Strategy): {set3}")
+            document.getElementById('output').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
